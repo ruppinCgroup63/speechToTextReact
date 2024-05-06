@@ -3,19 +3,17 @@ import SpeechRecognition, {
 } from "react-speech-recognition";
 import React, { useState, useEffect } from "react";
 
-const Dictaphone = () => {
+const DictationToSection = () => {
   const { transcript, listening, browserSupportsSpeechRecognition } =
     useSpeechRecognition();
-
   // Listening state and keywords to control transcription
   const [isListening, setIsListening] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [keywordMatched, setKeywordMatched] = useState("");
-  const [fullTranscript, setFullTranscript] = useState("");
   const [activeSection, setActiveSection] = useState("");
 
   const [keywords] = useState(["start", "end", "body", "stop"]);
-  // Monitor the transcript and toggle transcription accordingly
+
   useEffect(() => {
     if (transcript) {
       const foundKeyword = keywords.find((keyword) =>
@@ -23,60 +21,44 @@ const Dictaphone = () => {
       );
       if (foundKeyword) {
         setActiveSection(foundKeyword);
+        setKeywordMatched(foundKeyword);
         if (foundKeyword === "stop" && transcribing) {
           // Stop transcription on the "stop" keyword
           setTranscribing(false);
           console.log(
             `Keyword Detected: ${foundKeyword} - Stopping transcription.`
           );
-        } else if (!transcribing && foundKeyword !== "stop") {
-          // Start transcription on other keywords (e.g., "start", "end", etc.)
+        } else if (foundKeyword !== "stop" && !transcribing) {
           setKeywordMatched(foundKeyword);
           setTranscribing(true);
-          /* setFullTranscript(
-            (prev) =>
-              `${prev}\n--- ${foundKeyword.toUpperCase()} DETECTED ---\n`
-          );*/
-          console.log(
-            `Keyword Detected: ${foundKeyword} - Starting transcription.`
-          );
+          setIsListening(true);
         }
       }
-      // Stream new transcript additions only when actively transcribing and to the active section
-      if (transcribing && activeSection) {
-        setFullTranscript((prev) => `${prev}\n${transcript}`);
-      }
-
-      // Stream new transcript additions only when actively transcribing
-      /*  if (transcribing) {
-        setFullTranscript((prev) => `${prev}\n${transcript}`);
-      }*/
     }
   }, [transcript, keywords, transcribing, activeSection]);
 
-  // Function to start listening continuously
+  //Function to handle start listening click
   const handleStartListening = () => {
-    if (!listening) {
-      SpeechRecognition.startListening({ continuous: true, language: "en" });
-      setIsListening(true);
+    if (!isListening) {
+      SpeechRecognition.startListening({ continuous: true, language: "en-US" });
+      setTranscribing(true);
     }
   };
-
   // Function to stop listening completely
   const handleStopListening = () => {
-    SpeechRecognition.stopListening();
-    setIsListening(false);
-    setTranscribing(false);
-    setKeywordMatched("");
+    if (isListening) {
+      SpeechRecognition.stopListening();
+      setIsListening(false);
+      setTranscribing(false);
+      setKeywordMatched("");
+    }
   };
 
   // Return early if the browser does not support speech recognition
   if (!browserSupportsSpeechRecognition) {
     return <div>Browser doesn't support speech recognition.</div>;
   }
-  // <pre>{fullTranscript}</pre>
 
-  // UI for the Dictaphone
   return (
     <div>
       <div
@@ -102,12 +84,6 @@ const Dictaphone = () => {
         >
           <button onClick={handleStartListening}>Start Listening</button>
           <button onClick={handleStopListening}>Stop Listening</button>
-          <button
-            style={{ color: "red" }}
-            onClick={() => setFullTranscript("")}
-          >
-            Reset Transcript
-          </button>
         </div>
         <p>Detected Keyword: {keywordMatched}</p>
         <p>Transcript (Streaming):</p>
@@ -122,7 +98,9 @@ const Dictaphone = () => {
           }}
         >
           {" "}
-          <pre>{activeSection === "start" && fullTranscript}</pre>
+          <pre style={{ whiteSpace: "pre-wrap" }}>
+            {activeSection === "start" && transcribing}
+          </pre>
         </section>
         <section
           id="body"
@@ -134,7 +112,9 @@ const Dictaphone = () => {
           }}
         >
           {" "}
-          <pre>{activeSection === "body" && fullTranscript}</pre>
+          <pre style={{ whiteSpace: "pre-wrap" }}>
+            {activeSection === "body" && transcribing}
+          </pre>
         </section>
         <section
           id="end"
@@ -145,11 +125,12 @@ const Dictaphone = () => {
             border: "1px solid black",
           }}
         >
-          <pre>{activeSection === "end" && fullTranscript}</pre>
+          <pre style={{ whiteSpace: "pre-wrap" }}>
+            {activeSection === "end" && transcribing}
+          </pre>
         </section>
       </div>
     </div>
   );
 };
-
-export default Dictaphone;
+export default DictationToSection;
