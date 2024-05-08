@@ -4,57 +4,82 @@ import SpeechRecognition, {
 import React, { useState, useEffect } from "react";
 
 const DictationToSection = () => {
-  const { transcript, listening, browserSupportsSpeechRecognition } =
-    useSpeechRecognition();
-  // Listening state and keywords to control transcription
-  const [isListening, setIsListening] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
-  const [keywordMatched, setKeywordMatched] = useState("");
-  const [activeSection, setActiveSection] = useState("");
+  const {
+    resetTranscript,
+    listening,
+    transcript,
+    browserSupportsSpeechRecognition,
+  } = useSpeechRecognition();
 
   const [keywords] = useState(["start", "end", "body", "stop"]);
+  const [activeSection, setActiveSection] = useState("");
+  const [transcribing, setTranscribing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [dictationFromTranscript, setDictationFromTranscript] = useState(""); // New state for the concatenated transcript
+  //const [fullTranscript, setFullTranscript] = useState("");
+
+  const startListening = () => {
+    if (!listening) {
+      SpeechRecognition.startListening({ continuous: true, language: "en" });
+      setIsListening(true);
+      //   setTranscribing(true);
+    }
+  };
+
+  const stopListening = () => {
+    if (listening) {
+      SpeechRecognition.stopListening();
+      setIsListening(false);
+      //   setTranscribing(false);
+      resetTranscript(); // Reset the transcript to an empty string
+    }
+  };
+  // const handleTranscription = () => {
+  // Concatenate the new transcript to the existing string
+
+  // };
 
   useEffect(() => {
     if (transcript) {
+      console.log(transcript);
+
       const foundKeyword = keywords.find((keyword) =>
         transcript.includes(keyword)
       );
+
+      console.log(foundKeyword);
+
       if (foundKeyword) {
         setActiveSection(foundKeyword);
-        setKeywordMatched(foundKeyword);
         if (foundKeyword === "stop" && transcribing) {
-          // Stop transcription on the "stop" keyword
           setTranscribing(false);
           console.log(
             `Keyword Detected: ${foundKeyword} - Stopping transcription.`
           );
-        } else if (foundKeyword !== "stop" && !transcribing) {
-          setKeywordMatched(foundKeyword);
+          //setIsListening(false);
+        } else if (!transcribing && foundKeyword !== "stop") {
           setTranscribing(true);
-          setIsListening(true);
+          console.log(
+            `Keyword Detected: ${foundKeyword} - Starting transcription.`
+          );
+
+          /* setFullTranscript(
+            (prev) => `${prev} ${foundKeyword.toUpperCase()} \n`
+          );
+          //setIsListening(true);*/
+        } else if (foundKeyword !== "stop" && transcribing) {
+          console.log(
+            `foundKeyword !== "stop" && transcribing - ${foundKeyword}`
+          );
+          setActiveSection(foundKeyword);
+          setDictationFromTranscript((prev) => `${prev} ${transcript}`);
         }
       }
+      // Call the function to handle the transcription
+      //  handleTranscription(transcript);
     }
-  }, [transcript, keywords, transcribing, activeSection]);
+  }, [transcript, keywords, transcribing, activeSection, isListening]);
 
-  //Function to handle start listening click
-  const handleStartListening = () => {
-    if (!isListening) {
-      SpeechRecognition.startListening({ continuous: true, language: "en-US" });
-      setTranscribing(true);
-    }
-  };
-  // Function to stop listening completely
-  const handleStopListening = () => {
-    if (isListening) {
-      SpeechRecognition.stopListening();
-      setIsListening(false);
-      setTranscribing(false);
-      setKeywordMatched("");
-    }
-  };
-
-  // Return early if the browser does not support speech recognition
   if (!browserSupportsSpeechRecognition) {
     return <div>Browser doesn't support speech recognition.</div>;
   }
@@ -62,19 +87,16 @@ const DictationToSection = () => {
   return (
     <div>
       <div
-        id="container"
         style={{
           margin: "10px",
           justifyContent: "center",
-          width: "100%",
           display: "flex",
           flexDirection: "column",
           gap: "15px",
         }}
       >
-        <p>Microphone: {listening ? "on" : "off"}</p>
+        <p>Microphone: {isListening ? "on" : "off"}</p>
         <div
-          id="header"
           style={{
             display: "flex",
             flexDirection: "row",
@@ -82,10 +104,13 @@ const DictationToSection = () => {
             justifyContent: "center",
           }}
         >
-          <button onClick={handleStartListening}>Start Listening</button>
-          <button onClick={handleStopListening}>Stop Listening</button>
+          <button onClick={startListening} disabled={isListening}>
+            Start Listening
+          </button>
+          <button onClick={stopListening} disabled={!isListening}>
+            Stop Listening
+          </button>
         </div>
-        <p>Detected Keyword: {keywordMatched}</p>
         <p>Transcript (Streaming):</p>
 
         <section
@@ -97,25 +122,25 @@ const DictationToSection = () => {
             border: "1px solid black",
           }}
         >
-          {" "}
-          <pre style={{ whiteSpace: "pre-wrap" }}>
-            {activeSection === "start" && transcribing}
-          </pre>
+          {activeSection === "start" && transcribing && (
+            <p>{dictationFromTranscript}</p>
+          )}
         </section>
+
         <section
           id="body"
           style={{
+            height: "33vh",
             width: "100%",
             maxWidth: "100%",
-            height: "33vh",
             border: "1px solid black",
           }}
         >
-          {" "}
-          <pre style={{ whiteSpace: "pre-wrap" }}>
-            {activeSection === "body" && transcribing}
-          </pre>
+          {activeSection === "body" && transcribing && (
+            <p>{dictationFromTranscript}</p>
+          )}
         </section>
+
         <section
           id="end"
           style={{
@@ -125,12 +150,13 @@ const DictationToSection = () => {
             border: "1px solid black",
           }}
         >
-          <pre style={{ whiteSpace: "pre-wrap" }}>
-            {activeSection === "end" && transcribing}
-          </pre>
+          {activeSection === "end" && transcribing && (
+            <p>{dictationFromTranscript}</p>
+          )}
         </section>
       </div>
     </div>
   );
 };
+
 export default DictationToSection;

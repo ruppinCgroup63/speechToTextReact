@@ -48,7 +48,7 @@ const Dictaphone = () => {
       }
 
       // Stream new transcript additions only when actively transcribing
-      /*  if (transcribing) {
+      /* if (transcribing) {
         setFullTranscript((prev) => `${prev}\n${transcript}`);
       }*/
     }
@@ -74,7 +74,7 @@ const Dictaphone = () => {
   if (!browserSupportsSpeechRecognition) {
     return <div>Browser doesn't support speech recognition.</div>;
   }
-  // <pre>{fullTranscript}</pre>
+  // <pre>{fullTranscript}</pre>;
 
   // UI for the Dictaphone
   return (

@@ -1,11 +1,13 @@
-import logo from "./logo.svg";
 import "./App.css";
-import Dictaphone from "./Dictaphone";
+//import Dictaphone from "./Dictaphone";
+//import DictationToSection from "./DictationToSection";
+//import Shay from "./Shay";
+import Main from "./Main";
 
 function App() {
   return (
     <div className="App">
-      <Dictaphone></Dictaphone>
+      <Main />
     </div>
   );
 }
