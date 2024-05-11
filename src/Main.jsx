@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from "react";
-import SpeechRecognition, {
-  useSpeechRecognition,
-} from "react-speech-recognition";
+import { useSpeechRecognition } from "react-speech-recognition";
 import SpeechRecognitionComponent from "./SpeechRecognitionComponent";
-//import { unstable_batchedUpdates } from "react-dom";
+import SpeechRecognition from "react-speech-recognition";
+import { useState, useEffect } from "react";
 
 function Main() {
   const { transcript, listening, resetTranscript } = useSpeechRecognition();
@@ -17,45 +15,69 @@ function Main() {
   const handleStartListening = () => {
     if (!listening) {
       SpeechRecognition.startListening({ continuous: true, language: "en-US" });
+      console.log("Started listening...");
     }
   };
 
   const handleStopListening = () => {
+    console.log("Stopped listening...");
     SpeechRecognition.stopListening();
     setActiveComponent("");
   };
 
+  // Function to copy the transcript to clipboard
+  const copyToClipboard = () => {
+    navigator.clipboard
+      .writeText(transcript)
+      .then(() => {
+        console.log("Transcript copied to clipboard!");
+        // Optionally, you can show a success message or perform other actions.
+      })
+      .catch((err) => {
+        console.error("Failed to copy transcript: ", err);
+      });
+  };
+
   useEffect(() => {
-    // Only process if a keyword directly leads to a change
-    if (transcript.toLowerCase().includes("stop") && activeComponent) {
-      console.log("Stop recognized, pausing dictation for", activeComponent);
-      setActiveComponent(""); // This will keep the dictation recorded under the last active component
+    console.log(`Current Transcript: ${transcript}`);
+
+    if (transcript.toLowerCase().includes("stop")) {
+      console.log("Stop command processed, clearing active component.");
+      setActiveComponent("");
       resetTranscript();
     } else {
       const keywords = ["apple", "banana", "orange"];
-      const foundKeyword = keywords.find((keyword) =>
+      let foundKeyword = keywords.find((keyword) =>
         transcript.toLowerCase().includes(keyword)
       );
 
-      // Append transcript to active component or activate a new one if not currently dictating
-      if (foundKeyword && !activeComponent) {
-        console.log(
-          `Keyword '${foundKeyword}' detected and set as active component.`
-        );
-        setActiveComponent(foundKeyword); // Initiate new active component
+      if (foundKeyword) {
+        console.log(`Detected keyword: ${foundKeyword}`);
+        setActiveComponent(foundKeyword);
+        if (!dictations[foundKeyword]) {
+          console.log(
+            "Keyword found, but no dictation exists for it, starting new..."
+          );
+          setDictations((prev) => ({
+            ...prev,
+            [foundKeyword]: transcript,
+          }));
+          resetTranscript();
+        }
       }
 
-      // This block runs whatever is the currently set active component
-      if (activeComponent && dictations[activeComponent] !== undefined) {
-        console.log(`Appending text to active component: ${activeComponent}`);
+      if (activeComponent) {
+        console.log(
+          `Adding transcript to active component '${activeComponent}'`
+        );
         setDictations((prevDictations) => ({
           ...prevDictations,
           [activeComponent]: prevDictations[activeComponent] + " " + transcript,
         }));
-        resetTranscript(); // Clears the transcript after updating the state
+        resetTranscript(); // Consider the effect of resetting here
       }
     }
-  }, [transcript]);
+  }, [transcript]); // Listen to transcript changes only
 
   return (
     <div>
