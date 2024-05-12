@@ -1,7 +1,7 @@
 // SpeechRecognitionComponent.jsx
 import React from "react";
 
-function SpeechRecognitionComponent({ keyword, dictation, active }) {
+function SpeechRecognitionComponent({ active, keyword, dictation }) {
   return (
     <div
       style={{
@@ -11,6 +11,7 @@ function SpeechRecognitionComponent({ keyword, dictation, active }) {
         margin: "15px",
       }}
     >
+      {active ? "is now Active" : ""}
       <h2>{keyword} Component</h2>
       <p>{dictation}</p>
     </div>

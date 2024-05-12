@@ -1,17 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { cloneElement, useEffect, useState } from "react";
 import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
 import SpeechRecognitionComponent from "./SpeechRecognitionComponent";
+import { isLabelWithInternallyDisabledControl } from "@testing-library/user-event/dist/utils";
 
 function Main() {
   const { transcript, listening, resetTranscript } = useSpeechRecognition();
   const [activeComponent, setActiveComponent] = useState("");
+  const [isOn, setIsOn] = useState(false);
   const [dictations, setDictations] = useState({
     apple: "",
     banana: "",
     orange: "",
   });
+  const keywords = Object.keys(dictations);
 
   const handleStartListening = () => {
     if (!listening) {
@@ -26,38 +29,62 @@ function Main() {
     setActiveComponent("");
   };
 
+  // const handleDictationToActiveSection = (keyword) => {
+  //   resetTranscript();
+  //   console.log(`Detected keyword: ${foundKeyword}`);
+  //   setActiveComponent(foundKeyword);
+  // };
   useEffect(() => {
     console.log(`Current Transcript: ${transcript}`);
 
-    if (transcript.toLowerCase().includes("stop")) {
-      console.log("Stop command processed, clearing active component.");
-      setActiveComponent("");
-      resetTranscript();
+    if (transcript.toLowerCase().trim().endsWith("stop")) {
+      handleStopCommand();
     } else {
-      const keywords = ["apple", "banana", "orange"];
-      let foundKeyword = keywords.find((keyword) =>
-        transcript.toLowerCase().includes(keyword)
-      );
-
-      if (foundKeyword) {
-        resetTranscript();
-        console.log(`Detected keyword: ${foundKeyword}`);
-        setActiveComponent(foundKeyword);
-      }
-
-      if (activeComponent) {
-        console.log(
-          `Adding transcript to active component '${activeComponent}'`
-        );
-        setDictations((prevDictations) => ({
-          ...prevDictations,
-          [activeComponent]: prevDictations[activeComponent] + " " + transcript,
-        }));
-
-        // resetTranscript(); // Consider the effect of resetting here
-      }
+      handleTranscriptKeywords();
     }
-  }, [transcript]); // Listen to transcript changes only
+  }, [transcript]);
+
+  // Handles stop command logic
+  const handleStopCommand = () => {
+    console.log(
+      "Stop command processed.\nLast active component was: ",
+      activeComponent,
+      "\nResetting transcription."
+    );
+    setIsOn(false);
+    setActiveComponent("");
+    resetTranscript();
+  };
+
+  // Handles keyword recognition and dictation assignment
+  const handleTranscriptKeywords = () => {
+    let foundKeyword = keywords.find((keyword) =>
+      transcript.toLowerCase().includes(keyword)
+    );
+
+    if (foundKeyword && !isOn) {
+      console.log(`Detected keyword: ${foundKeyword}`);
+      setIsOn(true);
+      setActiveComponent(foundKeyword);
+    }
+
+    if (activeComponent && isOn) {
+      console.log(`Adding transcript to active component '${activeComponent}'`);
+      setDictations((prevDictations) => ({
+        ...prevDictations,
+        [activeComponent]: prevDictations[activeComponent] + " " + transcript,
+      }));
+      resetTranscript();
+    }
+  };
+
+  // Use useEffect to monitor isOn changes
+  useEffect(() => {
+    console.log("isOn has changed to: ", isOn);
+    if (!isOn) {
+      // Potentially handle logic only applicable when isOn toggles to false
+    }
+  }, [isOn]);
 
   return (
     <div>
@@ -69,7 +96,7 @@ function Main() {
         {listening && <p>Dictation is ON</p>}
       </div>
       <hr />
-      {["apple", "banana", "orange"].map((keyword) => (
+      {keywords.map((keyword) => (
         <SpeechRecognitionComponent
           key={keyword}
           active={activeComponent === keyword}
