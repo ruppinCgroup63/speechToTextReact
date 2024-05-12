@@ -1,3 +1,4 @@
+// SpeechRecognitionComponent.jsx
 import React from "react";
 
 function SpeechRecognitionComponent({ keyword, dictation, active }) {
@@ -11,7 +12,7 @@ function SpeechRecognitionComponent({ keyword, dictation, active }) {
       }}
     >
       <h2>{keyword} Component</h2>
-      {active && <p>{dictation}</p>}
+      <p>{dictation}</p>
     </div>
   );
 }

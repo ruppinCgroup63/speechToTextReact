@@ -1,7 +1,8 @@
-import { useSpeechRecognition } from "react-speech-recognition";
+import React, { useEffect, useState } from "react";
+import SpeechRecognition, {
+  useSpeechRecognition,
+} from "react-speech-recognition";
 import SpeechRecognitionComponent from "./SpeechRecognitionComponent";
-import SpeechRecognition from "react-speech-recognition";
-import { useState, useEffect } from "react";
 
 function Main() {
   const { transcript, listening, resetTranscript } = useSpeechRecognition();
@@ -25,19 +26,6 @@ function Main() {
     setActiveComponent("");
   };
 
-  // Function to copy the transcript to clipboard
-  const copyToClipboard = () => {
-    navigator.clipboard
-      .writeText(transcript)
-      .then(() => {
-        console.log("Transcript copied to clipboard!");
-        // Optionally, you can show a success message or perform other actions.
-      })
-      .catch((err) => {
-        console.error("Failed to copy transcript: ", err);
-      });
-  };
-
   useEffect(() => {
     console.log(`Current Transcript: ${transcript}`);
 
@@ -52,18 +40,9 @@ function Main() {
       );
 
       if (foundKeyword) {
+        resetTranscript();
         console.log(`Detected keyword: ${foundKeyword}`);
         setActiveComponent(foundKeyword);
-        if (!dictations[foundKeyword]) {
-          console.log(
-            "Keyword found, but no dictation exists for it, starting new..."
-          );
-          setDictations((prev) => ({
-            ...prev,
-            [foundKeyword]: transcript,
-          }));
-          resetTranscript();
-        }
       }
 
       if (activeComponent) {
@@ -74,7 +53,8 @@ function Main() {
           ...prevDictations,
           [activeComponent]: prevDictations[activeComponent] + " " + transcript,
         }));
-        resetTranscript(); // Consider the effect of resetting here
+
+        // resetTranscript(); // Consider the effect of resetting here
       }
     }
   }, [transcript]); // Listen to transcript changes only

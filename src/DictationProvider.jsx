@@ -1,53 +1,55 @@
-import React, { useEffect, createContext, useState, useContext } from "react";
-import SpeechRecognition, {
-  useSpeechRecognition,
-} from "react-speech-recognition";
+import React, { useEffect } from "react";
+import {
+  SpeechRecognitionProvider,
+  useSpeechRecognitionContext,
+} from "./SpeechRecognitionContext";
+import SpeechRecognitionComponent from "./SpeechRecognitionComponent";
 
-// Create a context for dictation state
-const DictationContext = createContext();
+function Main() {
+  const {
+    startListening,
+    stopListening,
+    dictations,
+    setDictations,
+    activeComponent,
+    setActiveComponent,
+    transcript,
+    resetTranscript,
+  } = useSpeechRecognitionContext();
 
-// Create a provider component to wrap your component hierarchy
-export const DictationProvider = ({ children }) => {
-  // Initialize state to store dictation data
-  const [dictationData, setDictationData] = useState("");
-
-  // Function to update dictation data
-  const updateDictationData = (data) => {
-    setDictationData(data);
-  };
-
-  // Initialize speech recognition
-  const { transcript, resetTranscript } = useSpeechRecognition();
-
-  // Handle speech recognition
-  const handleSpeechRecognition = () => {
-    if (transcript !== "") {
-      updateDictationData(transcript);
+  useEffect(() => {
+    if (activeComponent && transcript) {
+      setDictations((prevDictations) => {
+        const newDictation =
+          `${prevDictations[activeComponent]} ${transcript}`.trim();
+        return { ...prevDictations, [activeComponent]: newDictation };
+      });
       resetTranscript();
     }
-  };
-  const srartListening = () => {
-    SpeechRecognition.startListening();
-  };
-
-  // Start speech recognition when component mounts
-  useEffect(() => {
-    SpeechRecognition.startListening();
-    handleSpeechRecognition();
-  }, []);
+  }, [transcript]);
 
   return (
-    <DictationContext.Provider value={{ dictationData, updateDictationData }}>
-      {children}
-    </DictationContext.Provider>
+    <div>
+      <h1>Main Component</h1>
+      <button onClick={startListening}>Start Listening</button>
+      <button onClick={stopListening}>Stop Listening</button>
+      <div>
+        {["apple", "banana", "orange"].map((keyword) => (
+          <SpeechRecognitionComponent
+            key={keyword}
+            active={activeComponent === keyword}
+            keyword={keyword}
+            dictation={dictations[keyword]}
+          />
+        ))}
+      </div>
+    </div>
   );
-};
+}
 
-// Export the context and a custom hook to access the dictation state
-export const useDictation = () => {
-  const context = useContext(DictationContext);
-  if (!context) {
-    throw new Error("useDictation must be used within a DictationProvider");
-  }
-  return context;
-};
+// Wrap your component with SpeechRecognitionProvider to provide context
+export default () => (
+  <SpeechRecognitionProvider>
+    <Main />
+  </SpeechRecognitionProvider>
+);
